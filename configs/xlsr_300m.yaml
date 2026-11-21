@@ -1,0 +1,48 @@
+model:
+  family: xlsr
+  # Warm-start from a Persian fine-tuned XLS-R: training our own CTC head from
+  # the multilingual base collapsed to all-blank within 408 grad steps (head
+  # never calibrated on pretrained representations at 5h / 1e-5). A Persian
+  # fine-tuned checkpoint gives a calibrated head + Persian acoustics to adapt
+  # further on our pool — the practical low-resource transfer recipe.
+  # Warm-start from the community Persian base (cached offline). Our run-8
+  # attempt pointed at the local run-7 checkpoint to continue-fine-tune with
+  # the calibrated blank row (39); that run's clobber guard (train_ctc now
+  # REFUSES vocab-less checkpoints instead of rebuilding a random 79-char
+  # head) prevents overwriting a good checkpoint ever again. If a future run
+  # wants continue-fine-tuning, first COPY the checkpoint dir to a new path,
+  # never train in place.
+  checkpoint: alifarokh/wav2vec2-xls-r-300m-fa
+  language: fa
+
+experiment:
+  data_budgets: [5, 10, 25, 50, 100]
+  modes:
+    # CTC fine-tuning IS the full-parameter fine-tune for XLS-R; the Whisper
+    # full_finetune trainer cannot load wav2vec checkpoints.
+    - ctc
+
+training:
+  seed: 42
+  num_workers: 2
+  # RTX 3080 Ti Laptop 16GB — REBALANCED after on-device smoke tests
+  # (XLS-R-300M CTC full FT, bf16 autocast + gradient checkpointing):
+  #   batch 4:   8.99 GiB allocated / 11.58 GiB reserved  (safe)
+  #   batch 8:  13.39 GiB allocated / 19.80 GiB reserved  (fits, but the
+  #              >16 GiB reserved value means ZERO headroom, fragmentationable)
+  #   batch 16:  OutOfMemoryError
+  # Batch 4 is kept as the stable training config. If a future run squeezes
+  # more throughput per step, only raise to 8 after another fresh-process
+  # smoke test (reserved > allocated must stay under ~14 GiB).
+  bf16: true
+  gradient_checkpointing: true
+  optim: adamw_bnb_8bit
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 8
+  # Full fine-tune LR is much smaller than the LoRA LR.
+  # 3e-5 diverged in probes (blank-collapse within 12 steps); 1e-5 descends.
+  learning_rate: 1.0e-5
+  # Warm-started model only needs a short adaptation of its already-calibrated
+  # CTC head; too many epochs at 1e-5 risks overfitting the 5h pool.
+  num_epochs: 2

@@ -1,0 +1,1 @@
+from persian_asr.utils import env  # noqa: F401

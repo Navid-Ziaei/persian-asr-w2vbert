@@ -1,0 +1,13 @@
+experiment:
+  # Verified: the XLS-R/CTC arm (0.0635 CER @ 50h) outperforms Whisper LoRA by
+  # ~5x on the frozen v2 test split — this is the default headline family.
+  best_model_family: xlsr
+  data_budgets: [0, 5, 10, 25, 50, 100]
+  labeled_sources:
+    - existing_filtered
+    - manual_labeling
+    - synthetic
+  unlabeled_adaptation: true
+  self_supervised_epochs: 10
+  text_adaptation: true
+  augmentation: true

@@ -1,0 +1,27 @@
+data:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  splits_dir: data/splits
+  sample_rate: 16000
+
+output:
+  checkpoint_dir: outputs/checkpoints
+  log_dir: outputs/logs
+  metrics_dir: outputs/metrics
+
+text:
+  normalization: true
+  replace_multi_whitespace: true
+
+training:
+  seed: 42
+  num_workers: 2
+  # Defaults sized for a 16GB GPU (RTX 3080 Ti)
+  bf16: true
+  gradient_checkpointing: true
+  optim: adamw_bnb_8bit
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  learning_rate: 1.0e-4
+  num_epochs: 3
+  gradient_accumulation_steps: 4

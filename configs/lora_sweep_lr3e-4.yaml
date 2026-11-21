@@ -1,0 +1,41 @@
+model:
+  family: whisper
+  checkpoint: openai/whisper-large-v3
+  language: fa
+  task: transcribe
+  peft:
+    enabled: true
+    method: lora
+    rank: 32
+    alpha: 64
+
+experiment:
+  data_budgets: [0, 5, 10, 25, 50, 100]
+  modes:
+    - zero_shot
+    - lora
+
+training:
+  seed: 42
+  num_workers: 2
+  # RTX 3080 Ti Laptop 16GB — REBALANCED after on-device smoke tests:
+  #   batch 4 train+eval:  6.00 GiB allocated / 7.08 GiB reserved
+  #   batch 8 train:       6.00 GiB allocated (train peak is arch-dominated)
+  #   batch 8 eval gen:    6.00 GiB allocated / 11.00 GiB reserved (fp32
+  #                        generate-headroom spike; safe but tight) — with
+  #                        use_cache=True: 5.55 GiB / 5.95 GiB
+  # Batch 8 is kept: same train peak as batch 4, ~2x fewer optimizer/grad
+  # steps, and eval stays safe. If a future run raises bigger eval batches,
+  # prefer re-enabling use_cache for eval or dropping back to batch 4.
+  bf16: true
+  gradient_checkpointing: true
+  optim: adamw_bnb_8bit
+  per_device_train_batch_size: 8
+  per_device_eval_batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 3.0e-4
+  num_epochs: 3
+  warmup_steps: 40
+
+output:
+  run_tag: lr3e-4

@@ -1,0 +1,8 @@
+{
+  "mode": "w2vbert_ctc",
+  "budget_hours": 5.0,
+  "config": "configs/w2v_bert2.yaml",
+  "generated": "2026-11-20T10:21:02.352859",
+  "cer": 0.04348562906724512,
+  "wer": 0.21435970993704678
+}
